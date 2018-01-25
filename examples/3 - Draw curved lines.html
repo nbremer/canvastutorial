@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <!-- <script src="../plugins/d3.min.js"></script> -->
+</head>
+</head>
+
+<body>
+    <script>
+        //Append a canvas element to the body
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", 1000)
+            .attr("height", 700)
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+
+        //Adjust the fill & stroke styles
+        ctx.fillStyle = "#e42068"
+        ctx.strokeStyle = "#4DB7B0"
+        ctx.lineWidth = 3
+        ctx.lineCap = "round"
+
+        ////////////// Draw a (curved) quadratic bezier line //////////////
+
+        ctx.beginPath()
+        //Start drawing a line from the point x, y
+        ctx.moveTo(50, 100)
+        //Create a quadratic curve, with 1 anchor point
+        //anchor-x, anchor-y, end-x, end-y
+        ctx.quadraticCurveTo(150, 0, 250, 100)
+        //Stroke the path
+        ctx.stroke()
+        ctx.closePath()
+
+        ////////////// Draw a (curved) cubic bezier line //////////////
+
+        ctx.beginPath()
+        //Start drawing a line from the point x, y
+        ctx.moveTo(300, 100)
+        //Create a cubic curve, with 2 anchor points
+        //start-anchor-x, start-anchor-y, end-anchor-x, end-anchor-y, end-x, end-y
+        ctx.bezierCurveTo(400, 200, 400, 0, 500, 100)
+        //Stroke the path
+        ctx.stroke()
+        ctx.closePath()
+
+    </script>
+</body>

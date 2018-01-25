@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+
+    <style>
+        body {
+            text-align: center;
+        }
+        canvas {
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0px 0px 5px #c1c1c1;
+        }
+    </style>
+
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <!-- <script src="../../plugins/d3.min.js"></script> -->
+</head>
+</head>
+
+<body>
+    <script>
+
+        ///////////////////////////////////////////////////////////////////////////
+        /////////////////// Create canvas & set global variables //////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        let width = 1000
+        //Mercator map ratio
+        let mapRatio = 0.5078871
+        let height = Math.round(mapRatio * width)
+
+        //Append a canvas element to the body
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", 2 * width)
+            .attr("height", 2 * height)
+            //But fit this within an area that is the intended width and height
+            .style("width", width + "px")
+            .style("height", height + "px")
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+        ctx.scale(2, 2)
+
+        //Color blend mode of multiply for a nicer effect
+        ctx.globalCompositeOperation = "multiply"
+
+        ///////////////////////////////////////////////////////////////////////////
+        /////////////////////////////// Create scales /////////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        //The minimum and maximum values of the greenness variable
+        const maxL = 0.8
+        const minL = 0
+
+        const xScale = d3.scaleLinear()
+            .domain([1, 500])
+            .range([0, width])
+
+        const yScale = d3.scaleLinear()
+            .domain([1, 250])
+            .range([height, 0])
+
+        const radiusScale = d3.scaleSqrt()
+            .domain([minL, maxL])
+            .range([0, 2.5])
+            .clamp(true)
+
+        const opacityScale = d3.scaleLinear()
+            .domain([minL, maxL])
+            .range([1, 0.5])
+
+        const greenColor = d3.scaleLinear()
+            .domain([-0.08, 0.1, maxL])
+            .range(["#FAECAB", "#f2ec82", "#0c750c"])
+
+        ///////////////////////////////////////////////////////////////////////////
+        ////////////////////////////// Read in the data ///////////////////////////
+        ///////////////////////////////////////////////////////////////////////////
+
+        ctx.fillStyle = "white"
+        ctx.fillRect(0,0,width,height)
+        
+        d3.json("greenness-map-data.json", function(error, map_data) {
+
+            if (error) throw error
+
+            ///////////////////////////////////////////////////////////////////////////
+            /////////////////////////////// Draw the map //////////////////////////////
+            ///////////////////////////////////////////////////////////////////////////
+
+            //Draw the map by looping over each circle
+            // for(let i = 0; i < map_data.length; i++) {
+            map_data.forEach(function (d,i) {
+                //The fill color, opacity and radius of each circle are all based on the greenness value
+                ctx.fillStyle = greenColor(d.greenness)
+                ctx.globalAlpha = opacityScale(d.greenness)
+                let r = radiusScale(d.greenness)
+
+                //Draw the circle and fill it
+                ctx.beginPath()
+                ctx.arc(xScale(d.x), yScale(d.y), r, 0, 2*Math.PI)
+                ctx.closePath()
+                ctx.fill()
+            })//forEach
+            // }//for i
+
+        })//d3.json
+
+    </script>
+</body>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <!-- <script src="../plugins/d3.min.js"></script> -->
+</head>
+</head>
+
+<body>
+    <script>
+        let width = 500,
+            height = 700
+        //Append a canvas element to the body
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", width)
+            .attr("height", height)
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+
+        //Define the fill color
+        ctx.fillStyle = "#4DB7B0"
+
+        ////////////// Animate a rectangle //////////////
+
+        
+        const min_r = 10
+        const max_r = 100
+        let radius = 50
+        let sign_r = 1
+        let change_r = 1
+
+        let alpha = 0.5
+        let sign_a = 1
+        let change_a = 0.01
+
+        function loop() {
+            //Clear the area between the x, y, width & height
+            ctx.clearRect(0, 0, width, height)
+
+            //Add the "growth/shrinkage" onto the old radius
+            radius = radius + sign_r * change_r
+            //If the min or max is reached, make the change go the other way
+            if(radius <= min_r || radius >= max_r) sign_r = sign_r * -1
+            
+            alpha = alpha + sign_a * change_a
+            ctx.globalAlpha = alpha
+            if(alpha <= 0.1 || alpha >= 1) sign_a = sign_a * -1
+
+            //Draw a circle
+            ctx.beginPath()
+            ctx.arc(width/2, height/2, radius, 0, 2*Math.PI)
+            ctx.fill()
+            ctx.closePath()
+
+            //Call the next loop
+            requestAnimationFrame(loop)
+        }//function loop
+
+        //Start the 1st time
+        requestAnimationFrame(loop)
+
+    </script>
+</body>

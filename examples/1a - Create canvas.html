@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+     <!-- <script src="../plugins/d3.min.js"></script> -->
+</head>
+
+<body>
+    <script>
+        //Append a canvas element to the body
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", 1000)
+            .attr("height", 700)
+
+        //You can style the canvas as if it were an image
+        canvas.style("border", "1px solid #4DB7B0")
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+
+    </script>
+</body>

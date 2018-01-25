@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <!-- <script src="../plugins/d3.min.js"></script> -->
+</head>
+</head>
+
+<body>
+    <script>
+        let width = 500,
+            height = 700
+        //Append a canvas element to the body
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", width)
+            .attr("height", height)
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+
+        //Define the fill color
+        ctx.fillStyle = "#4DB7B0"
+
+        ////////////// Animate a rectangle //////////////
+
+        let x = 0
+        let change = 0.01
+        const total = width - 50 //The length the rect can move between
+        let progress = 0 //Will track progress along the total length (between 0 & 1)
+        const ease = d3.easeSinInOut
+
+        function loop() {
+            //Clear the area between the x, y, width & height
+            ctx.clearRect(0, 0, width, height)
+
+            //Add a little onto the change
+            progress = progress + change 
+            //If the edges are reached, make the change go the other way
+            if(progress <= 0 || progress >= 1) change = change * -1
+
+            //Calculate the x new position
+            x = total * ease(progress)
+
+            //Draw the rectangle
+            ctx.fillRect(x, 100, 50, 50)
+
+            //Call the next loop
+            requestAnimationFrame(loop)
+        }//function loop
+
+        //Start the 1st time
+        requestAnimationFrame(loop)
+
+    </script>
+</body>

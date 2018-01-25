@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <!-- <script src="../plugins/d3.min.js"></script> -->
+</head>
+</head>
+
+<body>
+    <script>
+        //Append a canvas element to the body
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", 1000)
+            .attr("height", 700)
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+
+        ////////////// Draw a rectangle //////////////
+
+        //Define the color to be used when something is filled
+        ctx.fillStyle = "#4DB7B0"
+        //Draw a rectangle with x, y, width, height
+        //x & y define the position of the top-left corner
+        ctx.fillRect(10,10,100,100)
+
+        //Draw another one that is a bit transparent
+        ctx.fillStyle = "rgba(228, 31, 104, 0.5)"
+        ctx.fillRect(50,50,150,150)
+
+        //Create a rectangle that is stroked
+        ctx.strokeStyle = "#e42068"
+        ctx.lineWidth = 3
+        ctx.strokeRect(30,80,100,100)
+
+        ////////////// Draw some text //////////////
+
+        //Define the font size and font family
+        ctx.font = "20px Verdana"
+
+        //Draw the font with text, start-x & start-y
+        ctx.fillText("bibbidi bobbidi", 250, 100)
+
+        //Adjust the font and create a stroked text
+        ctx.font = "italic bold 16px Verdana"
+        ctx.strokeText("boo", 250, 150)
+
+        ////////////// Draw a circle //////////////
+
+        //Adjust the fill style
+        ctx.fillStyle = "#4DB7B0"
+
+        //A circle is created with one of the "path" commands
+        //Start any path with beginPath()
+        ctx.beginPath()
+
+        //Draw the circle with: center-x, center-y, radius, start angle, end-angle
+        ctx.arc(500, 100, 50, 0, 2*Math.PI)
+
+        //Fill the path
+        ctx.fill()
+
+        //Close a path with closePath()
+        ctx.closePath()
+
+        ////////////// Draw a line //////////////
+
+        ctx.beginPath()
+        //Start drawing a line from the point x, y
+        //In essence, move your pen to this point
+        ctx.moveTo(600, 50)
+        //Draw a line to this point with x, y
+        ctx.lineTo(700, 150)
+        //Stroke the path
+        ctx.stroke()
+        ctx.closePath()
+
+        //You can use many CSS stylings too, such as stroke-linecap
+        ctx.lineCap = "round"
+        //or stroke-dasharray, you just need to search the canvas "words" for it
+        ctx.setLineDash([5, 15])
+        ctx.moveTo(650, 50)
+        ctx.lineTo(750, 150)
+        ctx.stroke()
+
+        //Drawing multiple line segments creates a path
+        ctx.beginPath()
+        ctx.moveTo(700,50)
+        ctx.lineTo(800,150)
+        ctx.lineTo(900,150)
+        ctx.lineTo(700,50)
+        //You can fill it, or stroke it, or both
+        ctx.fill()
+        ctx.stroke()
+        ctx.closePath()
+
+    </script>
+</body>
