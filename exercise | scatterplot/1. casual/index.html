@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body>
+    <script>
+        ////////////// Create the SVG //////////////
+
+        //****** Delete the SVG and create a canvas instead ******// 
+      
+        let width = 1000,
+            height = 800
+
+        //Create the SVG container
+        let svg = d3.select("body")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+
+        ////////////// Create scales //////////////
+
+        //****** Keep all of these scales as-is ******// 
+
+        const x_scale = d3.scaleLinear() //rating
+            .range([0, width])
+
+        const y_scale = d3.scaleLog() //budget
+            .domain([500, 500e6]) //in dollars
+            .range([height, 0])
+
+        const r_scale = d3.scaleSqrt() //profit ratio = revenue / budget
+            .domain([0, 6])
+            .range([0, 10])
+
+        //Make the movies that have the highest profit ratio less visible
+        //to balance their increased size
+        const opacity_scale = d3.scaleLinear() //profit ratio = revenue / budget
+            .domain([0, 100])
+            .range([0.2, 0.01])
+            .clamp(true)
+
+        //A linear color scale to give an idea about when a movie was made
+        const color_scale = d3.scaleSequential(d3.interpolateViridis) //release year
+
+        ////////////// Read in the data //////////////
+
+        //Data based on dataset from 
+        //https://data.world/popculture/imdb-5000-movie-dataset
+        d3.csv("imdb-movies.csv", function (error, data) {
+            if (error) throw error
+
+            ////////////// Final data prep //////////////
+
+            //****** Keep as-is ******// 
+
+            //Make the number columns actually numeric
+            data.forEach(d => {
+                d.release_year = +d.release_year
+                d.budget = +d.budget
+                d.revenue = +d.revenue
+                d.rating = +d.rating
+                d.num_voted_users = +d.num_voted_users
+                d.profit_ratio = +d.profit_ratio
+            })
+
+            ////////////// Adjust scales //////////////
+
+            //****** Keep as-is ******// 
+
+            //Set the range for the scales now that the data is read in
+            x_scale.domain(d3.extent(data, d => d.rating)).nice()
+            color_scale.domain(d3.extent(data, d => d.release_year))
+
+            ////////////// Create circles //////////////
+
+            //*** Replace this section with a loop that goes over all ***// 
+            //*** the data and creates a canvas circle for each movie ***//
+            //*** using the correct x, y, radius, color and opacity for each ***//  
+
+            let circle_group = svg.append("g").attr("class", "circle-group")
+
+            let circles = circle_group.selectAll(".movie")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "movie")
+                .attr("cx", d => x_scale(d.rating))
+                .attr("cy", d => y_scale(d.budget))
+                .attr("r", d => r_scale(d.profit_ratio))
+                .style("fill", d => color_scale(d.release_year))
+                .style("opacity", d => opacity_scale(d.profit_ratio))
+
+        })//d3.csv
+
+    </script>
+</body>

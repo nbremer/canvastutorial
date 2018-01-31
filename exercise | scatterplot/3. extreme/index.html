@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            text-anchor: middle;
+            letter-spacing: 1.3px;
+        }
+
+        .axis .title {
+            font-size: 12px;
+            font-weight: 500;
+            text-anchor: middle;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            fill: #6b6b6b;
+        }
+
+        .axis text {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            fill: #919191;
+        }
+
+        .axis path {
+            display: none;
+        }
+
+        .axis line {
+            stroke: #a5a5a5;
+        }
+    </style>
+    <!-- Google fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500" rel="stylesheet">
+
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body>
+    <script>
+        ////////////// Create the SVG //////////////
+
+        //****** Add a canvas and position both absolutely to overlap (medium level) *********//
+        let margin = {
+            top: 40,
+            right: 10,
+            bottom: 60,
+            left: 100
+        }
+        let width = 1000 - margin.left - margin.right,
+            height = 800 - margin.top - margin.bottom
+
+        //Create the SVG container
+        let svg = d3.select("body")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+        ////////////// Create scales //////////////
+
+        //****** Keep all of these scales as-is ******// 
+
+        const x_scale = d3.scaleLinear() //rating
+            .range([0, width])
+
+        const y_scale = d3.scaleLog() //budget
+            .domain([500, 500e6]) //in dollars
+            .range([height, 0])
+
+        const r_scale = d3.scaleSqrt() //profit ratio = revenue / budget
+            .domain([0, 6])
+            .range([0, 10])
+
+        //Make the movies that have the highest profit ratio less visible
+        //to balance their increased size
+        const opacity_scale = d3.scaleLinear() //profit ratio = revenue / budget
+            .domain([0, 100])
+            .range([0.2, 0.01])
+            .clamp(true)
+
+        //A linear color scale to give an idea about when a movie was made
+        const color_scale = d3.scaleSequential(d3.interpolateViridis) //release year
+
+        ////////////// Read in the data //////////////
+
+        //Data based on dataset from 
+        //https://data.world/popculture/imdb-5000-movie-dataset
+        d3.csv("imdb-movies.csv", function (error, data) {
+            if (error) throw error
+
+            ////////////// Final data prep //////////////
+
+            //****** Keep as-is ******// 
+
+            //Make the number columns actually numeric
+            data.forEach(d => {
+                d.release_year = +d.release_year
+                d.budget = +d.budget
+                d.revenue = +d.revenue
+                d.rating = +d.rating
+                d.num_voted_users = +d.num_voted_users
+                d.profit_ratio = +d.profit_ratio
+            })
+
+            ////////////// Adjust scales //////////////
+
+            //****** Keep as-is ******// 
+
+            //Set the range for the scales now that the data is read in
+            x_scale.domain(d3.extent(data, d => d.rating)).nice()
+            color_scale.domain(d3.extent(data, d => d.release_year))
+
+            ////////////// Create circles //////////////
+
+            //*** Replace this section with a loop that goes over all ***// 
+            //*** the data and creates a canvas circle for each movie ***//
+            //*** using the correct x, y, radius, color and opacity for each ***//  
+
+            let circle_group = svg.append("g").attr("class", "circle-group")
+
+            let circles = circle_group.selectAll(".movie")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "movie")
+                .attr("cx", d => x_scale(d.rating))
+                .attr("cy", d => y_scale(d.budget))
+                .attr("r", d => r_scale(d.profit_ratio))
+                .style("fill", d => color_scale(d.release_year))
+                .style("opacity", d => opacity_scale(d.profit_ratio))
+
+            ////////////// Create axes //////////////
+
+            //****** Keep as-is ******// 
+
+            let x_axis = svg.append("g") //x scale - rating
+                .attr("class", "axis x")
+                .attr("transform", "translate(0 " + height + ")")
+                .call(d3.axisBottom(x_scale))
+
+            let y_axis = svg.append("g") //y scale - budget
+                .attr("class", "axis y")
+                .call(d3.axisLeft(y_scale)
+                    .ticks(5)
+                    .tickFormat(d3.format("$,.0s"))
+                )
+
+            ////////////// Create titles //////////////
+
+            //****** Keep as-is ******// 
+
+            //Add chart title
+            svg.append("text")
+                .attr("class", "chart-title")
+                .attr("x", width / 2)
+                .attr("y", -10)
+                .text("comparing budgets versus ratings for nearly 5000 movies across the last 90 years")
+
+            //Add x title
+            x_axis.append("text")
+                .attr("class", "title")
+                .attr("x", width / 2)
+                .attr("y", 40)
+                .text("Rating")
+
+            //Add y title
+            y_axis.append("text")
+                .attr("class", "title")
+                .attr("x", 0)
+                .attr("y", 50)
+                .text("Budget")
+
+            ////////////// Create hover interaction //////////////
+
+            //****** Turn this into a canvas interaction and animation ******// 
+
+            circles
+                .on("mouseover", function(d) {
+                    console.log(d.title)
+                    d3.select(this)
+                        .transition().duration(1000)
+                        .attr("r", r_scale(d.profit_ratio) * 1.5)
+                        .style("opacity", 1)
+                })
+                .on("mouseout", function(d) {
+                    d3.select(this)
+                        .transition().duration(300)
+                        .attr("r", r_scale(d.profit_ratio))
+                        .style("opacity", opacity_scale(d.profit_ratio))
+                })
+
+        })//d3.csv
+
+    </script>
+</body>

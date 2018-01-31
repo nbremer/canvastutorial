@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body>
+    <script>
+        ////////////// Create the canvas //////////////
+      
+        let width = 1000,
+            height = 800
+
+        //Create the canvas
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", width)
+            .attr("height", height)
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+
+        ////////////// Create scales //////////////
+
+        const x_scale = d3.scaleLinear() //rating
+            .range([0, width])
+
+        const y_scale = d3.scaleLog() //budget
+            .domain([500, 500e6]) //in dollars
+            .range([height, 0])
+
+        const r_scale = d3.scaleSqrt() //profit ratio = revenue / budget
+            .domain([0, 6])
+            .range([0, 10])
+
+        //Make the movies that have the highest profit ratio less visible
+        //to balance their increased size
+        const opacity_scale = d3.scaleLinear() //profit ratio = revenue / budget
+            .domain([0, 100])
+            .range([0.2, 0.01])
+            .clamp(true)
+
+        //A linear color scale to give an idea about when a movie was made
+        const color_scale = d3.scaleSequential(d3.interpolateViridis) //release year
+
+        ////////////// Read in the data //////////////
+
+        //Data based on dataset from 
+        //https://data.world/popculture/imdb-5000-movie-dataset
+        d3.csv("imdb-movies.csv", function (error, data) {
+            if (error) throw error
+
+            ////////////// Final data prep //////////////
+
+            //Make the number columns actually numeric
+            data.forEach(d => {
+                d.release_year = +d.release_year
+                d.budget = +d.budget
+                d.revenue = +d.revenue
+                d.rating = +d.rating
+                d.num_voted_users = +d.num_voted_users
+                d.profit_ratio = +d.profit_ratio
+            })
+
+            ////////////// Adjust scales //////////////
+
+            //Set the range for the scales now that the data is read in
+            x_scale.domain(d3.extent(data, d => d.rating)).nice()
+            color_scale.domain(d3.extent(data, d => d.release_year))
+
+            ////////////// Create circles //////////////
+
+            data.forEach(d => {
+                //Set the color and opacity
+                ctx.fillStyle = color_scale(d.release_year)
+                ctx.globalAlpha = opacity_scale(d.profit_ratio)
+
+                //Draw the circle
+                ctx.beginPath()
+                ctx.arc(x_scale(d.rating), y_scale(d.budget), r_scale(d.profit_ratio), 0, 2*Math.PI)
+                ctx.closePath()
+                ctx.fill()
+            })
+
+        })//d3.csv
+
+    </script>
+</body>

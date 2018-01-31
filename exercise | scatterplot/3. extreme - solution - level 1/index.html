@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<head>
+    <meta charset="utf-8">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+
+        svg, canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        svg {
+             /* so the canvas will capture all hover action */
+            pointer-events: none;
+        }
+
+        .chart-title {
+            font-size: 16px;
+            text-anchor: middle;
+            letter-spacing: 1.3px;
+        }
+
+        .axis .title {
+            font-size: 12px;
+            font-weight: 500;
+            text-anchor: middle;
+            text-transform: uppercase;
+            letter-spacing: 1.3px;
+            fill: #6b6b6b;
+        }
+
+        .axis text {
+            font-family: 'Roboto', sans-serif;
+            font-size: 11px;
+            fill: #919191;
+        }
+
+        .axis path {
+            display: none;
+        }
+
+        .axis line {
+            stroke: #a5a5a5;
+        }
+    </style>
+    <!-- Google fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500" rel="stylesheet">
+
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body>
+    <script>
+        ////////////// Create the SVG and canvas //////////////
+
+        let margin = {
+            top: 40,
+            right: 10,
+            bottom: 60,
+            left: 100
+        }
+        let width = 1000 - margin.left - margin.right,
+            height = 800 - margin.top - margin.bottom,
+            width_m = width + margin.left + margin.right,
+            height_m = height + margin.top + margin.bottom
+
+        //Create the canvas, while doing the "retina hack"
+        let canvas = d3.select("body")
+            .append("canvas")
+            .attr("width", 2 * width_m)
+            .attr("height", 2 * height_m)
+            .style("width", width_m + "px")
+            .style("height", height_m + "px")
+
+        //Get the 2D context from the canvas element
+        let ctx = canvas.node().getContext("2d")
+        ctx.scale(2,2)
+        ctx.translate(margin.left, margin.top)
+
+        //Create the SVG container
+        let svg = d3.select("body")
+            .append("svg")
+            .attr("width", width_m)
+            .attr("height", height_m)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+        ////////////// Create scales //////////////
+
+        const x_scale = d3.scaleLinear() //rating
+            .range([0, width])
+
+        const y_scale = d3.scaleLog() //budget
+            .domain([500, 500e6]) //in dollars
+            .range([height, 0])
+
+        const r_scale = d3.scaleSqrt() //profit ratio = revenue / budget
+            .domain([0, 6])
+            .range([0, 10])
+
+        //Make the movies that have the highest profit ratio less visible
+        //to balance their increased size
+        const opacity_scale = d3.scaleLinear() //profit ratio = revenue / budget
+            .domain([0, 100])
+            .range([0.2, 0.01])
+            .clamp(true)
+
+        //A linear color scale to give an idea about when a movie was made
+        const color_scale = d3.scaleSequential(d3.interpolateViridis) //release year
+
+        ////////////// Voronoi //////////////
+
+        //Initialize the voronoi within the rectangle of width x height
+        const voronoi = d3.voronoi()
+            .x(function (d) { return x_scale(d.rating) })
+            .y(function (d) { return y_scale(d.budget) })
+            .extent([[0, 0], [width, height]])
+
+        ////////////// Read in the data //////////////
+
+        //Data based on dataset from 
+        //https://data.world/popculture/imdb-5000-movie-dataset
+        d3.csv("imdb-movies.csv", function (error, data) {
+            if (error) throw error
+
+            ////////////// Final data prep //////////////
+
+            //Make the number columns actually numeric
+            data.forEach(d => {
+                d.release_year = +d.release_year
+                d.budget = +d.budget
+                d.revenue = +d.revenue
+                d.rating = +d.rating
+                d.num_voted_users = +d.num_voted_users
+                d.profit_ratio = +d.profit_ratio
+            })
+
+            ////////////// Adjust scales //////////////
+
+            //Set the range for the scales now that the data is read in
+            x_scale.domain(d3.extent(data, d => d.rating)).nice()
+            color_scale.domain(d3.extent(data, d => d.release_year))
+
+            ////////////// Create circles //////////////
+
+            draw_all_circles()
+
+            //Turned into a function, because this is also needed for the hover
+            function draw_all_circles() {
+                //Clear the entire canvas
+                ctx.clearRect(0,0,width_m,height_m)
+
+                data.forEach(d => {
+                    //Set the color and opacity
+                    ctx.fillStyle = color_scale(d.release_year)
+                    ctx.globalAlpha = opacity_scale(d.profit_ratio)
+
+                    //Draw the circle
+                    ctx.beginPath()
+                    ctx.arc(x_scale(d.rating), y_scale(d.budget), r_scale(d.profit_ratio), 0, 2 * Math.PI)
+                    ctx.closePath()
+                    ctx.fill()
+                })
+            }//function draw_all_circles
+
+            ////////////// Create axes //////////////
+
+            let x_axis = svg.append("g") //x scale - rating
+                .attr("class", "axis x")
+                .attr("transform", "translate(0 " + height + ")")
+                .call(d3.axisBottom(x_scale))
+
+            let y_axis = svg.append("g") //y scale - budget
+                .attr("class", "axis y")
+                .call(d3.axisLeft(y_scale)
+                    .ticks(5)
+                    .tickFormat(d3.format("$,.0s"))
+                )
+
+            ////////////// Create titles //////////////
+
+            //Add chart title
+            svg.append("text")
+                .attr("class", "chart-title")
+                .attr("x", width / 2)
+                .attr("y", -10)
+                .text("comparing budgets versus ratings for nearly 5000 movies across the last 90 years")
+
+            //Add x title
+            x_axis.append("text")
+                .attr("class", "title")
+                .attr("x", width / 2)
+                .attr("y", 40)
+                .text("Rating")
+
+            //Add y title
+            y_axis.append("text")
+                .attr("class", "title")
+                .attr("x", 0)
+                .attr("y", 50)
+                .text("Budget")
+
+            ////////////// Create hover interaction //////////////
+
+            //Create the voronoi grid (but this is not drawn)
+            diagram = voronoi(data)
+
+            //When a mouse is moved over the canvas, see if it’s near enough
+            canvas.on("mousemove", function() {
+                //Get the x and y location of the mouse over the canvas
+                let m = d3.mouse(this)
+                //Find the nearest song to the mouse within a max distance of 50 pixels
+                let found = diagram.find(m[0] - margin.left, m[1] - margin.top, 50)
+
+                //If found is defined, run a function to do stuff
+                if (found) highlight_circle(found.data) 
+                else draw_all_circles()
+            })//on mousemove
+
+            function highlight_circle(d) {
+                console.log(d.title)
+
+                //Draw all circles
+                draw_all_circles()
+
+                //Draw the mouse-overed circle in black
+                ctx.fillStyle = "black"
+                ctx.globalAlpha = 1
+                //Draw the circle
+                ctx.beginPath()
+                ctx.arc(x_scale(d.rating), y_scale(d.budget), r_scale(d.profit_ratio), 0, 2*Math.PI)
+                ctx.closePath()
+                ctx.fill()
+
+                //NOTE | this is actually rather ineffective: redrawing all circles on each mousemove.
+                //It would be much better to either have another canvas on which you draw the black circle if needed
+                //Or to just draw that 1 black circle on the SVG when needed
+            }//function draw_all_circles
+
+        })//d3.csv
+
+    </script>
+</body>
